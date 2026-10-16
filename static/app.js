@@ -1,9 +1,15 @@
+// Velli Draw Check UI: calls the FastAPI endpoints and renders the results.
+// Every CSV-derived string goes through esc() before it is put into innerHTML.
+
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// Indian number formatting: 1,23,456.00
 const rs = (n) => "₹" + Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const rsInt = (n) => "₹" + Number(n).toLocaleString("en-IN");
+// "2026-10-16" -> "16/10/2026"
 const dmy = (iso) => iso.split("-").reverse().join("/");
 
+// GET a JSON endpoint. On error, turn FastAPI's detail (a string, an ambiguous-name object, or 422 validation errors) into a readable message.
 async function api(path) {
   const res = await fetch(path);
   const body = await res.json();
@@ -21,6 +27,7 @@ function showError(msg) {
   $("error").hidden = !msg;
 }
 
+// Show one worker's result card and fill in the English + Tamil WhatsApp message (bonus a).
 function renderResult(r) {
   const req = r.request;
   const warnings = r.warnings.map((w) => `<p class="warn">${esc(w)}</p>`).join("");
@@ -58,6 +65,7 @@ function renderResult(r) {
     ${warnings}`;
   $("result").hidden = false;
 
+  // Bonus (a): ready-to-send message in English and Tamil
   const limit = rsInt(r.eligible);
   $("waText").value =
     `Hello ${r.name}, as of ${dmy(r.date)} you can draw up to ${limit} from Velli. A 2% fee is recovered on payday (10th).\n\n` +
@@ -66,6 +74,7 @@ function renderResult(r) {
   $("copied").hidden = true;
 }
 
+// Bonus (b): table of every worker's limit on the chosen date.
 function renderSummary(rows, date) {
   $("summaryTitle").textContent = `All workers on ${dmy(date)}`;
   $("summaryTable").innerHTML = `
@@ -80,6 +89,7 @@ function renderSummary(rows, date) {
   $("summary").hidden = false;
 }
 
+// Check one worker; the amount is sent only when it has been entered.
 $("form").addEventListener("submit", async (e) => {
   e.preventDefault();
   showError("");
@@ -102,6 +112,7 @@ $("showAll").addEventListener("click", async () => {
   }
 });
 
+// Copy the WhatsApp text; falls back to execCommand where the Clipboard API is blocked (e.g. plain http on a LAN IP).
 $("copy").addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText($("waText").value);
@@ -112,6 +123,7 @@ $("copy").addEventListener("click", async () => {
   $("copied").hidden = false;
 });
 
+// On load: default the date to today (local time, not UTC), then load the worker dropdown and data notes.
 (async function init() {
   const today = new Date();
   $("date").value = new Date(today - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);

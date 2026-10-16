@@ -1,4 +1,10 @@
-"""Velli wage-advance eligibility: data cleaning + business rules (TASK_BRIEF.pdf)."""
+"""Velli wage-advance eligibility: data cleaning + business rules (TASK_BRIEF.pdf).
+
+Loads attendance_register.csv and draws.csv once, cleans the messy values, and answers
+"how much can this worker draw on date D?". Rule numbers in comments refer to the brief.
+All money maths uses Fraction so rounding down to the nearest Rs 100 is exact (no float drift);
+values are converted to 2-dp floats only for output.
+"""
 import csv
 import difflib
 import re
@@ -8,32 +14,39 @@ from pathlib import Path
 
 PAID_MARKS = {"P", "WO"}    # confirmed by Velli: weekly off is paid; only A and blank are unpaid
 KNOWN_MARKS = {"P", "A", "WO", ""}
-PF_ESI_PER_CYCLE = Fraction(2000)
-MAX_PER_DRAW = 5000
-FEE_RATE = Fraction(2, 100)
-FUZZY_CUTOFF = 0.85
+PF_ESI_PER_CYCLE = Fraction(2000)   # rule 3
+MAX_PER_DRAW = 5000                 # rule 5
+FEE_RATE = Fraction(2, 100)         # rule 7
+FUZZY_CUTOFF = 0.85                 # "Bikas Oraon" vs "Bikash Oraon" scores ~0.96; unrelated names score far lower
 
 
 class WorkerNotFound(Exception):
-    pass
+    """No worker matches the emp_code or name typed in."""
 
 
 class Ambiguous(Exception):
+    """A name matches more than one worker (e.g. two 'Rahul Kumar'); carries the candidates."""
+
     def __init__(self, query, candidates):
         super().__init__(f"'{query}' matches {len(candidates)} workers")
         self.candidates = candidates
 
 
 def norm_name(s):
+    """Lower-case and collapse whitespace so ' Selvi  K' and 'selvi k' compare equal."""
     return re.sub(r"\s+", " ", (s or "").strip().lower())
 
 
 def parse_rate(raw):
+    """Turn messy money text ('₹989', '850.00', '1,500') into an exact Fraction."""
     return Fraction(re.sub(r"[₹,\s]", "", raw or "0"))
 
 
 def cycle_for(d):
-    """Wage cycle: 10th of one month to the 9th of the next."""
+    """Rule 1: return (start, end) of the wage cycle containing d — 10th of one month to the 9th of the next.
+
+    e.g. 16-Oct -> (10-Oct, 09-Nov); 09-Oct -> (10-Sep, 09-Oct); 15-Dec -> (10-Dec, 09-Jan next year).
+    """
     y, m = d.year, d.month
     if d.day < 10:
         y, m = (y - 1, 12) if m == 1 else (y, m - 1)
@@ -42,10 +55,16 @@ def cycle_for(d):
 
 
 def money(x):
+    """Fraction -> float rounded to paise, for JSON output only."""
     return round(float(x), 2)
 
 
 class Register:
+    """The cleaned data set plus the eligibility rules. Built once at server start-up.
+
+    `notes` collects every data problem found while loading, shown to ops under "Data notes".
+    """
+
     def __init__(self, attendance_csv, draws_csv):
         self.notes = []
         self.workers = {}   # emp_code -> worker dict
@@ -56,8 +75,10 @@ class Register:
 
     # ---------- loading / cleaning ----------
     def _load_attendance(self, path):
+        """Read the register: clean rates and marks, and note anything unusual."""
         with path.open(encoding="utf-8-sig", newline="") as f:
             rows = list(csv.DictReader(f))
+        # Any header that parses as dd-Mon-yyyy is a day column; the rest are worker fields
         date_cols = {}
         for col in rows[0].keys():
             try:
@@ -113,6 +134,11 @@ class Register:
                                   "; draws are matched on name + contractor")
 
     def _load_draws(self, path):
+        """Read past advances and tie each one to a single emp_code.
+
+        Match on (name, contractor) because names alone are not unique. If the spelling differs,
+        fall back to the closest name under the same contractor. Unmatched draws are reported, never dropped silently.
+        """
         with path.open(encoding="utf-8-sig", newline="") as f:
             rows = list(csv.DictReader(f))
         for r in rows:
@@ -142,6 +168,7 @@ class Register:
 
     # ---------- lookup ----------
     def find_worker(self, query):
+        """Look up by emp_code (any case) or exact name; raise Ambiguous if a name is shared."""
         q = (query or "").strip()
         if q.upper() in self.workers:
             return self.workers[q.upper()]
@@ -154,27 +181,36 @@ class Register:
         return hits[0]
 
     def worker_list(self):
+        """Minimal worker info for the UI dropdown."""
         return [{k: w[k] for k in ("emp_code", "name", "contractor", "status")} for w in self.workers.values()]
 
     # ---------- rules ----------
     def compute(self, emp_code, d, amount=None):
-        w = self.workers[emp_code]
-        start, end = cycle_for(d)
-        total_days = (end - start).days + 1
-        days_so_far = (d - start).days + 1
+        """Everything ops needs for one worker on date d, plus a decision if an amount is requested.
 
+        Only attendance and draws from cycle start up to d are used (rule 8).
+        """
+        w = self.workers[emp_code]
+        start, end = cycle_for(d)                      # rule 1
+        total_days = (end - start).days + 1
+        days_so_far = (d - start).days + 1             # inclusive of d
+
+        # Rule 2: P and WO are paid; A and blank are not. Days with no register column count as blank.
         paid_days = sum(1 for day, m in w["marks"].items() if start <= day <= d and m in PAID_MARKS)
         earned = w["rate"] * paid_days
-        pf_esi = PF_ESI_PER_CYCLE * days_so_far / total_days
-        net = earned - pf_esi
+        pf_esi = PF_ESI_PER_CYCLE * days_so_far / total_days   # rule 3: prorated by calendar days
+        net = earned - pf_esi                                   # rule 4
+        # Draws before cycle start belong to the previous cycle; draws after d haven't happened yet
         counted = [x for x in self.draws if x["emp_code"] == emp_code and start <= x["date"] <= d]
         drawn = sum((x["amount"] for x in counted), Fraction(0))
 
+        # Rule 5: 50% of net minus this cycle's draws, floored to Rs 100, kept between 0 and 5,000. Rule 6: inactive -> 0.
         if w["active"]:
             eligible = min(MAX_PER_DRAW, max(0, int((net / 2 - drawn) // 100) * 100))
         else:
             eligible = 0
 
+        # Warn ops when the register can't support the answer (date outside the data we have)
         warnings = []
         if not any(start <= day <= d for day in self.dates):
             warnings.append("No attendance recorded in the register for this cycle up to this date.")
@@ -194,8 +230,9 @@ class Register:
         }
 
         if amount is not None:
-            amt = Fraction(str(amount))
-            fee = amt * FEE_RATE
+            amt = Fraction(str(amount))     # via str so 1999.99 stays exact
+            fee = amt * FEE_RATE            # rule 7: fee is on top; worker gets the full amount
+            # First failing check gives the rejection reason
             if amt <= 0:
                 status, reason = "Rejected", "Requested amount must be more than ₹0"
             elif not w["active"]:
@@ -211,4 +248,5 @@ class Register:
         return result
 
     def summary(self, d):
+        """Bonus (b): every worker's numbers on date d."""
         return [self.compute(code, d) for code in self.workers]

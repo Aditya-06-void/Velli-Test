@@ -1,3 +1,4 @@
+/* Colour tokens */
 :root {
   --bg: #f5f6f8;
   --card: #fff;
@@ -19,6 +20,7 @@ h2 { margin: 0 0 12px; font-size: 17px; }
 .sub { margin: 4px 0 20px; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
 
+/* Form: three columns on desktop, one on phones (see media query) */
 form { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; }
 label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 13px; }
 select, input, textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--text); }
@@ -29,6 +31,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 
 .error { background: var(--bad-bg); color: var(--bad); padding: 10px 14px; border-radius: 8px; }
 
+/* Result card */
 .who { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .who strong { font-size: 18px; }
 .tag { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--border); }
@@ -38,6 +41,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 dl { display: grid; grid-template-columns: 1fr auto; margin: 0; }
 dt, dd { margin: 0; padding: 6px 0; border-bottom: 1px solid var(--border); }
 dd { text-align: right; font-variant-numeric: tabular-nums; }
+/* Approved / Rejected box: class name is the status from the API */
 .decision { margin-top: 14px; padding: 12px 14px; border-radius: 8px; }
 .decision.Approved { background: var(--ok-bg); color: var(--ok); }
 .decision.Rejected { background: var(--bad-bg); color: var(--bad); }
@@ -47,6 +51,7 @@ dd { text-align: right; font-variant-numeric: tabular-nums; }
 
 textarea { width: 100%; resize: vertical; margin-bottom: 8px; }
 
+/* All-workers table scrolls sideways on narrow screens instead of the page */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }

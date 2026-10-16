@@ -13,6 +13,7 @@
     <p class="sub">How much can this worker draw today?</p>
   </header>
 
+  <!-- Inputs: worker (sends emp_code, so duplicate names are unambiguous), date, optional amount -->
   <form id="form" class="card">
     <label>Worker
       <select id="worker" required></select>
@@ -31,8 +32,10 @@
 
   <p id="error" class="error" role="alert" hidden></p>
 
+  <!-- Filled by renderResult() in app.js -->
   <section id="result" class="card" hidden aria-live="polite"></section>
 
+  <!-- Bonus (a): English + Tamil message -->
   <section id="whatsapp" class="card" hidden>
     <h2>WhatsApp message</h2>
     <textarea id="waText" rows="6" readonly></textarea>
@@ -40,11 +43,13 @@
     <span id="copied" class="muted" hidden>Copied</span>
   </section>
 
+  <!-- Bonus (b): all workers on the chosen date -->
   <section id="summary" class="card" hidden>
     <h2 id="summaryTitle">All workers</h2>
     <div class="table-wrap"><table id="summaryTable"></table></div>
   </section>
 
+  <!-- Data problems found while loading the CSVs (/api/notes) -->
   <details class="card">
     <summary>Data notes: what we found and cleaned in the CSVs</summary>
     <ul id="notes"></ul>
