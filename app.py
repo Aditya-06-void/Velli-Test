@@ -4,8 +4,9 @@ from datetime import date
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from eligibility import Ambiguous, Register, WorkerNotFound
 
@@ -21,13 +22,36 @@ for f in reg.flags:
 app = FastAPI(title="Velli Eligibility")
 
 
-@app.get("/api/workers")
+class VercelPathMiddleware:
+    """Corrects ASGI scope['path'] if Vercel URL rewrite or serverless routing alters it."""
+
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+            # Vercel passes the original incoming URI in x-matched-path or x-forwarded-uri
+            forwarded = headers.get(b"x-matched-path") or headers.get(b"x-forwarded-uri")
+            if forwarded:
+                orig_path = forwarded.decode("latin-1").split("?")[0]
+                if scope.get("path", "").startswith("/api/index") and not orig_path.startswith("/api/index"):
+                    scope["path"] = orig_path
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(VercelPathMiddleware)
+
+api_router = APIRouter()
+
+
+@api_router.get("/workers")
 def workers():
     """All workers (code, name, contractor, status) for the dropdown."""
     return reg.worker_list()
 
 
-@app.get("/api/eligibility")
+@api_router.get("/eligibility")
 def eligibility(worker: str, date: date, amount: Optional[float] = None):
     """Eligibility for one worker on a date; with `amount`, also approve/reject, fee and repayable.
 
@@ -42,23 +66,28 @@ def eligibility(worker: str, date: date, amount: Optional[float] = None):
     return reg.compute(w["emp_code"], date, amount)
 
 
-@app.get("/api/summary")
+@api_router.get("/summary")
 def summary(date: date):
     """Bonus (b): every worker's limit on the chosen date."""
     return reg.summary(date)
 
 
-@app.get("/api/flags")
+@api_router.get("/flags")
 def flags():
     """Import flags that need ops review (inactive worker paid, unrelated UPI payee, unmatched draw)."""
     return reg.flags
 
 
-@app.get("/api/notes")
+@api_router.get("/notes")
 def notes():
     """Data problems found while cleaning the CSVs."""
     return reg.notes
 
+
+# Mount router both with '/api' prefix and without prefix so it works regardless of whether
+# the platform (e.g. Vercel) strips '/api' or preserves it, as well as local uvicorn.
+app.include_router(api_router, prefix="/api")
+app.include_router(api_router)
 
 # Mounted last so /api/* routes win; serves the UI from the same origin (no CORS needed)
 app.mount("/", StaticFiles(directory=HERE / "static", html=True), name="static")
