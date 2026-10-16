@@ -4,7 +4,7 @@ from datetime import date
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.types import ASGIApp, Receive, Scope, Send
 
@@ -43,6 +43,15 @@ class VercelPathMiddleware:
 app.add_middleware(VercelPathMiddleware)
 
 api_router = APIRouter()
+
+
+@api_router.get("/debug")
+def debug(request: Request):
+    headers = {k.decode("latin-1"): v.decode("latin-1") for k, v in request.scope.get("headers", [])}
+    return {
+        "scope_path": request.scope.get("path"),
+        "headers": headers,
+    }
 
 
 @api_router.get("/workers")
