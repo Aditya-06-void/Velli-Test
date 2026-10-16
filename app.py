@@ -1,4 +1,5 @@
 """FastAPI server for the Velli eligibility tool. Run: uvicorn app:app --reload"""
+import logging
 from datetime import date
 from pathlib import Path
 from typing import Optional
@@ -11,6 +12,11 @@ from eligibility import Ambiguous, Register, WorkerNotFound
 HERE = Path(__file__).parent
 # Load and clean the CSVs once at start-up; restart the server after editing them
 reg = Register(HERE / "attendance_register.csv", HERE / "draws.csv")
+
+# Flag problems for ops as soon as the CSVs are imported
+log = logging.getLogger("uvicorn.error")
+for f in reg.flags:
+    log.warning("FLAG [%s] %s", f["type"], f["message"])
 
 app = FastAPI(title="Velli Eligibility")
 
@@ -40,6 +46,12 @@ def eligibility(worker: str, date: date, amount: Optional[float] = None):
 def summary(date: date):
     """Bonus (b): every worker's limit on the chosen date."""
     return reg.summary(date)
+
+
+@app.get("/api/flags")
+def flags():
+    """Import flags that need ops review (inactive worker paid, unrelated UPI payee, unmatched draw)."""
+    return reg.flags
 
 
 @app.get("/api/notes")

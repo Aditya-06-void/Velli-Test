@@ -63,6 +63,15 @@ except Ambiguous as e:
     assert {c["emp_code"] for c in e.candidates} == {"W102", "W103"}
 
 assert len(reg.draws) == 19, len(reg.draws)   # every draw matched
+
+# import flags: inactive worker paid, unrelated UPI payee; family payees (same surname) are notes, not flags
+kinds = sorted((f["type"], f["emp_code"], f["date"]) for f in reg.flags)
+assert kinds == [("inactive_paid", "W109", "2026-10-16"), ("unrelated_payee", "W112", "2026-10-27")], kinds
+assert any("Pema Tamang" in n for n in reg.notes)
+assert len(reg.compute("W112", D)["flags"]) == 1 and reg.compute("W104", D)["flags"] == []
+assert reg.compute("W112", date(2026, 10, 27))["already_drawn"] == 4500   # flagged draw still counted
 print("All checks passed.")
+for f in reg.flags:
+    print(" FLAG", f["message"])
 for n in reg.notes:
     print(" -", n)

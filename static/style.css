@@ -47,6 +47,11 @@ dd { text-align: right; font-variant-numeric: tabular-nums; }
 .decision.Rejected { background: var(--bad-bg); color: var(--bad); }
 .decision .status { font-weight: 700; font-size: 18px; }
 .decision dl { color: var(--text); margin-top: 8px; }
+/* Import flags: top panel and the per-worker list on the result card */
+.flags { border-color: #f3c3bd; background: var(--bad-bg); }
+.flags h2 { color: var(--bad); }
+.flags ul { margin: 0; padding-left: 20px; font-size: 14px; }
+.worker-flags { margin: 12px 0 0; padding: 10px 10px 10px 28px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); font-size: 14px; }
 .warn { color: #a15c07; font-size: 13px; margin: 10px 0 0; }
 
 textarea { width: 100%; resize: vertical; margin-bottom: 8px; }

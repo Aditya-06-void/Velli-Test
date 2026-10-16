@@ -30,6 +30,9 @@ function showError(msg) {
 // Show one worker's result card and fill in the English + Tamil WhatsApp message (bonus a).
 function renderResult(r) {
   const req = r.request;
+  const flags = r.flags.length
+    ? `<ul class="worker-flags">${r.flags.map((f) => `<li><strong>Flag:</strong> ${esc(f.message)}</li>`).join("")}</ul>`
+    : "";
   const warnings = r.warnings.map((w) => `<p class="warn">${esc(w)}</p>`).join("");
   const draws = r.draws.length
     ? r.draws.map((d) => `${dmy(d.date)}: ${rs(d.amount)}${d.paid_to !== r.name ? ` (to ${esc(d.paid_to)})` : ""}`).join("<br>")
@@ -62,6 +65,7 @@ function renderResult(r) {
         <dt>Total repayable on payday${req.status === "Rejected" ? " if approved" : ""}</dt><dd>${rs(req.repayable)}</dd>
       </dl>
     </div>` : ""}
+    ${flags}
     ${warnings}`;
   $("result").hidden = false;
 
@@ -123,15 +127,18 @@ $("copy").addEventListener("click", async () => {
   $("copied").hidden = false;
 });
 
-// On load: default the date to today (local time, not UTC), then load the worker dropdown and data notes.
+// On load: default the date to today (local time, not UTC), then load the worker dropdown, import flags and data notes.
 (async function init() {
   const today = new Date();
   $("date").value = new Date(today - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   try {
-    const [workers, notes] = await Promise.all([api("/api/workers"), api("/api/notes")]);
+    const [workers, flags, notes] = await Promise.all([api("/api/workers"), api("/api/flags"), api("/api/notes")]);
     $("worker").innerHTML = workers
       .map((w) => `<option value="${esc(w.emp_code)}">${esc(w.emp_code)} · ${esc(w.name)} (${esc(w.contractor)})${w.status.toLowerCase() === "active" ? "" : " [" + esc(w.status) + "]"}</option>`)
       .join("");
+    $("flagsTitle").textContent = `Flags for ops (${flags.length}): found while importing the CSVs`;
+    $("flagList").innerHTML = flags.map((f) => `<li>${esc(f.message)}</li>`).join("");
+    $("flags").hidden = flags.length === 0;
     $("notes").innerHTML = notes.map((n) => `<li>${esc(n)}</li>`).join("");
   } catch (err) {
     showError("Could not load workers: " + err.message);

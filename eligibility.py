@@ -54,6 +54,12 @@ def cycle_for(d):
     return date(y, m, 10), date(ny, nm, 9)
 
 
+def surname(name):
+    """Last word of a name, used to tell family UPI accounts ('Pema Tamang' for 'Dipak Tamang') from unrelated ones."""
+    parts = norm_name(name).split(" ")
+    return parts[-1] if parts else ""
+
+
 def money(x):
     """Fraction -> float rounded to paise, for JSON output only."""
     return round(float(x), 2)
@@ -62,16 +68,24 @@ def money(x):
 class Register:
     """The cleaned data set plus the eligibility rules. Built once at server start-up.
 
-    `notes` collects every data problem found while loading, shown to ops under "Data notes".
+    Import findings are kept at two levels:
+      - `notes`: messy values cleaned automatically (info only), shown under "Data notes".
+      - `flags`: money problems ops must review (inactive worker paid, unrelated UPI payee,
+        unmatched draw). Logged at start-up and shown prominently in the UI. Flags never change
+        the numbers: a flagged draw still counts against the worker.
     """
 
     def __init__(self, attendance_csv, draws_csv):
         self.notes = []
+        self.flags = []     # {"type", "emp_code", "date", "message"}
         self.workers = {}   # emp_code -> worker dict
         self.dates = []     # dates that have a column in the register
         self._load_attendance(Path(attendance_csv))
         self.draws = []     # draws matched to an emp_code
         self._load_draws(Path(draws_csv))
+
+    def _flag(self, kind, emp_code, d, message):
+        self.flags.append({"type": kind, "emp_code": emp_code, "date": d.isoformat(), "message": message})
 
     # ---------- loading / cleaning ----------
     def _load_attendance(self, path):
@@ -137,7 +151,7 @@ class Register:
         """Read past advances and tie each one to a single emp_code.
 
         Match on (name, contractor) because names alone are not unique. If the spelling differs,
-        fall back to the closest name under the same contractor. Unmatched draws are reported, never dropped silently.
+        fall back to the closest name under the same contractor. Unmatched draws are flagged, never dropped silently.
         """
         with path.open(encoding="utf-8-sig", newline="") as f:
             rows = list(csv.DictReader(f))
@@ -155,14 +169,22 @@ class Register:
                 if hits:
                     self.notes.append(f"{label}: name spelt differently, matched to {hits[0]['emp_code']} {hits[0]['name']}")
             if len(hits) != 1:
-                self.notes.append(f"{label}: could not be matched to exactly one worker; NOT counted")
+                self._flag("unmatched_draw", None, d, f"{label}: could not be matched to exactly one worker; NOT counted")
                 continue
             w = hits[0]
             paid_to = r["paid_to_name"].strip()
-            if norm_name(paid_to) != norm_name(name):
-                self.notes.append(f"{label}: paid to UPI of '{paid_to}', not the worker; still counted against {w['emp_code']}")
+            if norm_name(paid_to) not in (norm_name(w["name"]), norm_name(name)):
+                # shortcut: a shared surname = family. South Indian names often end in an initial
+                # (Selvi K, Kannan S), so a relative can still be flagged; upgrade to a payee whitelist if ops want one.
+                if surname(paid_to) == surname(w["name"]):
+                    self.notes.append(f"{label}: paid to family UPI '{paid_to}' (same surname); counted against {w['emp_code']}")
+                else:
+                    self._flag("unrelated_payee", w["emp_code"], d,
+                               f"{label}: paid to UPI of '{paid_to}', a different surname from {w['name']}; "
+                               f"still counted against {w['emp_code']}, please verify")
             if not w["active"]:
-                self.notes.append(f"{label}: paid out although {w['emp_code']} is {w['status']}")
+                self._flag("inactive_paid", w["emp_code"], d,
+                           f"{label}: paid out although {w['emp_code']} {w['name']} is {w['status']}")
             self.draws.append({"emp_code": w["emp_code"], "date": d, "amount": amount,
                                "paid_to": paid_to, "upi_ref": r["upi_ref"].strip()})
 
@@ -227,6 +249,8 @@ class Register:
             "draws": [{"date": x["date"].isoformat(), "amount": money(x["amount"]), "paid_to": x["paid_to"],
                        "upi_ref": x["upi_ref"]} for x in counted],
             "eligible": eligible, "warnings": warnings, "request": None,
+            # All import flags for this worker, regardless of date: they are review items, not calculation inputs
+            "flags": [f for f in self.flags if f["emp_code"] == emp_code],
         }
 
         if amount is not None:

@@ -13,6 +13,12 @@
     <p class="sub">How much can this worker draw today?</p>
   </header>
 
+  <!-- Import flags that need ops review (/api/flags); hidden when there are none -->
+  <section id="flags" class="card flags" hidden>
+    <h2 id="flagsTitle">Flags for ops</h2>
+    <ul id="flagList"></ul>
+  </section>
+
   <!-- Inputs: worker (sends emp_code, so duplicate names are unambiguous), date, optional amount -->
   <form id="form" class="card">
     <label>Worker
@@ -51,7 +57,7 @@
 
   <!-- Data problems found while loading the CSVs (/api/notes) -->
   <details class="card">
-    <summary>Data notes: what we found and cleaned in the CSVs</summary>
+    <summary>Data notes: what we cleaned automatically in the CSVs</summary>
     <ul id="notes"></ul>
   </details>
 </main>
