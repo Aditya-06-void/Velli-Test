@@ -107,7 +107,8 @@ select:focus, input:focus { outline: none; border-color: var(--accent); box-shad
 
 /* Error, empty and loading states */
 .error { background: var(--bad-soft); color: var(--bad); border: 1px solid #efd3cd; padding: 11px 14px; border-radius: var(--radius-sm); font-size: 14px; }
-.empty { border: 1px dashed var(--line-strong); border-radius: var(--radius); padding: 40px 32px; color: var(--muted); max-width: 62ch; }
+.empty { border: 1px dashed var(--line-strong); border-radius: var(--radius); padding: 40px 32px; color: var(--muted); }
+.empty p { max-width: 62ch; }
 .empty-title { color: var(--ink); font-weight: 600; margin-bottom: 6px; }
 .result { overflow: hidden; transition: opacity 0.15s; }
 .result[aria-busy="true"] { opacity: 0.55; }
@@ -201,5 +202,5 @@ table.grid { width: 100%; border-collapse: collapse; font-size: 14px; }
   .headline-amount { font-size: 36px; }
   .decision { grid-template-columns: 1fr; }
   .decision-figs { grid-column: 1; grid-row: auto; margin-top: 6px; }
-  .statement .calc { display: none; }
+  .statement .calc, .draws td:last-child { display: none; }
 }
