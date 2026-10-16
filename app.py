@@ -35,12 +35,14 @@ class VercelPathMiddleware:
             headers = dict(scope.get("headers", []))
             path = scope.get("path", "")
 
-            # Direct debug check
-            if path in ("/debug", "/api/debug"):
+            # Direct debug check triggered by query param or header
+            query_string = scope.get("query_string", b"")
+            if b"debug=1" in query_string or b"x-debug" in headers or "debug" in path:
                 payload = json.dumps({
-                    "scope_path": path,
+                    "scope_path": scope.get("path"),
+                    "query_string": query_string.decode("latin-1"),
                     "headers": {k.decode("latin-1"): v.decode("latin-1") for k, v in headers.items()},
-                }).encode("utf-8")
+                }, indent=2).encode("utf-8")
                 await send({
                     "type": "http.response.start",
                     "status": 200,
