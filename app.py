@@ -22,6 +22,8 @@ for f in reg.flags:
 app = FastAPI(title="Velli Eligibility")
 
 
+import json
+
 class VercelPathMiddleware:
     """Corrects ASGI scope['path'] if Vercel URL rewrite or serverless routing alters it."""
 
@@ -31,11 +33,30 @@ class VercelPathMiddleware:
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] == "http":
             headers = dict(scope.get("headers", []))
+            path = scope.get("path", "")
+
+            # Direct debug check
+            if path in ("/debug", "/api/debug"):
+                payload = json.dumps({
+                    "scope_path": path,
+                    "headers": {k.decode("latin-1"): v.decode("latin-1") for k, v in headers.items()},
+                }).encode("utf-8")
+                await send({
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": [
+                        [b"content-type", b"application/json"],
+                        [b"content-length", str(len(payload)).encode("ascii")],
+                    ],
+                })
+                await send({"type": "http.response.body", "body": payload})
+                return
+
             # Vercel passes the original incoming URI in x-matched-path or x-forwarded-uri
             forwarded = headers.get(b"x-matched-path") or headers.get(b"x-forwarded-uri")
             if forwarded:
                 orig_path = forwarded.decode("latin-1").split("?")[0]
-                if scope.get("path", "").startswith("/api/index") and not orig_path.startswith("/api/index"):
+                if not orig_path.endswith(".py"):
                     scope["path"] = orig_path
         await self.app(scope, receive, send)
 
