@@ -1,4 +1,4 @@
-# Velli Draw Check
+# Velli Draw Check.
 
 Answers one question for the operations team: **how much can this worker draw today?**
 
