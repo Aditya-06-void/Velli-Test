@@ -22,44 +22,36 @@ for f in reg.flags:
 app = FastAPI(title="Velli Eligibility")
 
 
-import json
+from urllib.parse import parse_qs, urlencode
 
 class VercelPathMiddleware:
-    """Corrects ASGI scope['path'] if Vercel URL rewrite or serverless routing alters it."""
+    """Restores ASGI scope['path'] from __path query parameter or proxy headers."""
 
     def __init__(self, app: ASGIApp):
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         if scope["type"] == "http":
-            headers = dict(scope.get("headers", []))
-            path = scope.get("path", "")
+            qs = scope.get("query_string", b"").decode("latin-1")
+            if "__path=" in qs:
+                params = parse_qs(qs, keep_blank_values=True)
+                if "__path" in params:
+                    rewritten_path = params.pop("__path")[0]
+                    if not rewritten_path.startswith("/"):
+                        rewritten_path = "/" + rewritten_path
+                    while rewritten_path.startswith("//"):
+                        rewritten_path = rewritten_path[1:]
+                    scope["path"] = rewritten_path
+                    cleaned_qs = urlencode(params, doseq=True)
+                    scope["query_string"] = cleaned_qs.encode("latin-1")
+            else:
+                headers = dict(scope.get("headers", []))
+                forwarded = headers.get(b"x-matched-path") or headers.get(b"x-forwarded-uri")
+                if forwarded:
+                    orig_path = forwarded.decode("latin-1").split("?")[0]
+                    if not orig_path.endswith(".py"):
+                        scope["path"] = orig_path
 
-            # Direct debug check triggered by query param or header
-            query_string = scope.get("query_string", b"")
-            if b"debug=1" in query_string or b"x-debug" in headers or "debug" in path:
-                payload = json.dumps({
-                    "scope_path": scope.get("path"),
-                    "query_string": query_string.decode("latin-1"),
-                    "headers": {k.decode("latin-1"): v.decode("latin-1") for k, v in headers.items()},
-                }, indent=2).encode("utf-8")
-                await send({
-                    "type": "http.response.start",
-                    "status": 200,
-                    "headers": [
-                        [b"content-type", b"application/json"],
-                        [b"content-length", str(len(payload)).encode("ascii")],
-                    ],
-                })
-                await send({"type": "http.response.body", "body": payload})
-                return
-
-            # Vercel passes the original incoming URI in x-matched-path or x-forwarded-uri
-            forwarded = headers.get(b"x-matched-path") or headers.get(b"x-forwarded-uri")
-            if forwarded:
-                orig_path = forwarded.decode("latin-1").split("?")[0]
-                if not orig_path.endswith(".py"):
-                    scope["path"] = orig_path
         await self.app(scope, receive, send)
 
 
