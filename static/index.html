@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Velli Draw Check</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Velli Draw Check</h1>
+    <p class="sub">How much can this worker draw today?</p>
+  </header>
+
+  <form id="form" class="card">
+    <label>Worker
+      <select id="worker" required></select>
+    </label>
+    <label>Date
+      <input type="date" id="date" required>
+    </label>
+    <label>Requested amount (₹, optional)
+      <input type="number" id="amount" min="0" step="any" placeholder="e.g. 2000">
+    </label>
+    <div class="actions">
+      <button type="submit">Check eligibility</button>
+      <button type="button" id="showAll" class="secondary">Show all workers on this date</button>
+    </div>
+  </form>
+
+  <p id="error" class="error" role="alert" hidden></p>
+
+  <section id="result" class="card" hidden aria-live="polite"></section>
+
+  <section id="whatsapp" class="card" hidden>
+    <h2>WhatsApp message</h2>
+    <textarea id="waText" rows="6" readonly></textarea>
+    <button type="button" id="copy" class="secondary">Copy</button>
+    <span id="copied" class="muted" hidden>Copied</span>
+  </section>
+
+  <section id="summary" class="card" hidden>
+    <h2 id="summaryTitle">All workers</h2>
+    <div class="table-wrap"><table id="summaryTable"></table></div>
+  </section>
+
+  <details class="card">
+    <summary>Data notes: what we found and cleaned in the CSVs</summary>
+    <ul id="notes"></ul>
+  </details>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

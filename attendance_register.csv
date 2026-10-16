@@ -1,0 +1,17 @@
+emp_code,worker_name,contractor,grade,per_day_rate,status,10-Oct-2026,11-Oct-2026,12-Oct-2026,13-Oct-2026,14-Oct-2026,15-Oct-2026,16-Oct-2026,17-Oct-2026,18-Oct-2026,19-Oct-2026,20-Oct-2026,21-Oct-2026,22-Oct-2026,23-Oct-2026,24-Oct-2026,25-Oct-2026,26-Oct-2026,27-Oct-2026,28-Oct-2026,29-Oct-2026,30-Oct-2026,31-Oct-2026,01-Nov-2026,02-Nov-2026,03-Nov-2026,04-Nov-2026,05-Nov-2026,06-Nov-2026,07-Nov-2026,08-Nov-2026,09-Nov-2026,10-Nov-2026,11-Nov-2026,12-Nov-2026,13-Nov-2026,14-Nov-2026,15-Nov-2026
+W101,Bikash Oraon,MMG,B,850,Active,P,WO,P,P,P,P,P,P,WO,P,P,A,P,P,P,WO,P,P,P,P,P,P,WO,P,A,P,P,P,P,WO,P,P,P,,,,WO
+W102,Rahul Kumar,MMG,B,850,Active,P,WO,P,P,A,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W103,Rahul Kumar,SE,A,989,Active,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,A,A,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W104,Dipak Tamang,SE,A,989,Active,P,WO,P,P,P,P,A,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W105,Sunil Munda,MMG,C,750,Active,P,WO,P,P,P,P,P,P,WO,P,A,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,A,P,WO,P,P,P,,,,WO
+W106,Prakash Behera,NANIRA,A,₹989,Active,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,A,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W107,Hemanta Gogoi,SE,B,850.00,Active,P,WO,A,A,A,p,P,P,WO,P,p,P,A,A,P,WO,P,P ,P,A,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W108,Murugan R,NANIRA,C,750,Active,,,,,,,,,,,,,,,,,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W109,Santosh Nayak,MMG,B,850,Inactive,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,,,,,,,,,,,,,,,WO
+W110,Ramesh Thapa,GS,C,750,Active,P,WO,P,P,P,A,P,P,WO,P,P,P,P,P,A,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W111,Arjun Majhi,SE,B,850,Active,P,WO,P,P,P,P,P,P,WO,A,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W112,Selvi K,NANIRA,C,750,Active,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,A,A,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W113,Bijay Hansda,MMG,B,850,Active,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,A,P,P,P,P,P,WO,P,P,P,,,,WO
+W114,Anil Kisku,SE,A,989,Active,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
+W115,Manoj Pradhan,NANIRA,B,850,Active,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,A,WO,P,P,P,P,P,P,WO,A,P,P,,,,WO
+W116,Tenzing Lama,GS,C,750,Active,P,WO,P,P,P,P,P,A,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,P,P,P,WO,P,P,P,,,,WO
