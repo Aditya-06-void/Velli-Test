@@ -21,7 +21,7 @@ API example: `/api/eligibility?worker=W104&date=2026-10-16&amount=2000`. `worker
 
 ## Rules as implemented
 - Cycle runs from the 10th to the 9th of the next month. On 16-Oct-2026 that is 10/10/2026–09/11/2026 (31 days).
-- Paid days = `P` marks from cycle start to the chosen date, inclusive.
+- Paid days = `P` and `WO` marks from cycle start to the chosen date, inclusive (Velli confirmed weekly off is paid). `A` and blank are unpaid.
 - PF+ESI = 2000 × days so far ÷ cycle days.
 - Eligible = 50% × (earned − PF+ESI) − drawn this cycle, rounded down to ₹100, then clamped to 0–5,000. It is 0 for inactive workers.
 - Request decision, checked in this order: invalid amount (≤ 0) → inactive → over ₹5,000 → over eligible → Approved. Fee = 2%. Repayable = amount + fee.
@@ -41,7 +41,7 @@ API example: `/api/eligibility?worker=W104&date=2026-10-16&amount=2000`. `worker
 The same list is generated live from the CSVs under "Data notes" in the UI.
 
 ## Open questions for Velli
-1. **Is WO (weekly off) paid?** The brief only says P is paid and A/blank are not. We treat WO as **unpaid**. To change this, set `PAID_MARKS = {"P", "WO"}` in `eligibility.py`.
+1. ~~Is WO (weekly off) paid?~~ **Answered: yes.** Only A and blank are unpaid. Set by `PAID_MARKS = {"P", "WO"}` in `eligibility.py`.
 2. Is ₹5,000 a cap per draw or per cycle? We cap **per draw**, as written.
 3. Should draws to an inactive worker or to an unrelated UPI name be blocked or flagged? We count them and flag them in the notes.
 4. Should a mid-cycle joiner's PF+ESI be prorated from the joining date? We follow rule 3 literally and prorate from the cycle start.

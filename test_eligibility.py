@@ -15,17 +15,17 @@ assert cycle_for(date(2026, 11, 10)) == (date(2026, 11, 10), date(2026, 12, 9))
 assert cycle_for(date(2026, 12, 15)) == (date(2026, 12, 10), date(2027, 1, 9))
 assert cycle_for(date(2027, 1, 3)) == (date(2026, 12, 10), date(2027, 1, 9))
 
-# code: (paid_days, earned, drawn, eligible)
+# code: (paid_days, earned, drawn, eligible) -- P and WO are paid, A and blank are not
 expected = {
-    "W101": (6, 5100, 2000, 300),   # 'Bikas Oraon' draw matched
-    "W102": (5, 4250, 1500, 300),   # Rahul Kumar MMG gets the draw
-    "W103": (6, 5934, 0, 2700),     # Rahul Kumar SE does not
-    "W104": (5, 4945, 0, 2200),     # Sep / 3-Oct draws are previous cycle
-    "W105": (6, 4500, 3000, 0),     # negative clamped to 0
-    "W106": (6, 5934, 0, 2700),     # '₹989' rate
-    "W107": (3, 2550, 0, 1000),     # lowercase 'p' counted, '850.00' rate
-    "W108": (0, 0, 0, 0),           # blanks unpaid
-    "W109": (6, 5100, 2000, 0),     # inactive
+    "W101": (7, 5950, 2000, 700),   # 'Bikas Oraon' draw matched
+    "W102": (6, 5100, 1500, 800),   # Rahul Kumar MMG gets the draw
+    "W103": (7, 6923, 0, 3200),     # Rahul Kumar SE does not
+    "W104": (6, 5934, 0, 2700),     # Sep / 3-Oct draws are previous cycle; 16-Oct is A
+    "W105": (7, 5250, 3000, 0),     # negative clamped to 0
+    "W106": (7, 6923, 0, 3200),     # '₹989' rate
+    "W107": (4, 3400, 0, 1400),     # lowercase 'p' counted, '850.00' rate
+    "W108": (0, 0, 0, 0),           # blanks unpaid (11-Oct WO slot is blank too)
+    "W109": (7, 5950, 2000, 0),     # inactive
 }
 for code, (paid, earned, drawn, elig) in expected.items():
     r = reg.compute(code, D)
@@ -35,7 +35,7 @@ for code, (paid, earned, drawn, elig) in expected.items():
 
 # requests
 r = reg.compute("W101", D, 2000)["request"]
-assert r["status"] == "Rejected" and "300" in r["reason"], r
+assert r["status"] == "Rejected" and "700" in r["reason"], r
 r = reg.compute("W104", D, 2000)["request"]
 assert r == {"amount": 2000, "status": "Approved", "reason": "", "fee": 40, "repayable": 2040}, r
 assert reg.compute("W109", D, 1000)["request"]["status"] == "Rejected"

@@ -6,7 +6,7 @@ from datetime import date, datetime
 from fractions import Fraction
 from pathlib import Path
 
-PAID_MARKS = {"P"}          # WO is not listed as paid in the brief -> unpaid (open question for Velli)
+PAID_MARKS = {"P", "WO"}    # confirmed by Velli: weekly off is paid; only A and blank are unpaid
 KNOWN_MARKS = {"P", "A", "WO", ""}
 PF_ESI_PER_CYCLE = Fraction(2000)
 MAX_PER_DRAW = 5000

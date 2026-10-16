@@ -96,7 +96,7 @@ These go into `test_eligibility.py`, along with:
 - the 10/11 payday draw being excluded on 9-Nov and included on 10-Nov
 
 ## Open questions to raise with Velli (brief says "don't guess silently")
-1. **Is WO (weekly off) paid?** The rules only list P as paid and A/blank as unpaid. We assume **unpaid**. This is one constant (`PAID_MARKS = {"P"}`), so it's a one-line flip.
+1. **Is WO (weekly off) paid?** **Answered by Velli: yes, WO is paid; only A and blank are unpaid.** Implemented as `PAID_MARKS = {"P", "WO"}`. The "Expected numbers" table above was written before this answer. The current figures live in `test_eligibility.py`: W101 → 700, W104 → 2,700, W107 → 1,400.
 2. Is ₹5,000 a cap per draw or per cycle? We follow the text: **per draw**.
 3. Should a draw paid to an inactive worker (Santosh, 16/10) or to an unrelated UPI name (Selvi → Kannan S) be flagged to ops? We count it and surface it in the notes.
 4. Murugan R: blanks before 26-Oct. Should a mid-cycle joiner's PF+ESI start from the joining date? We follow rule 3 literally (from cycle start).
