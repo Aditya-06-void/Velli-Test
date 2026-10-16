@@ -245,7 +245,9 @@ class Register:
             "date": d.isoformat(), "cycle_start": start.isoformat(), "cycle_end": end.isoformat(),
             "total_cycle_days": total_days, "days_so_far": days_so_far,
             "paid_days": paid_days, "earned": money(earned), "pf_esi": money(pf_esi),
-            "net_earned": money(net), "already_drawn": money(drawn),
+            "net_earned": money(net), "already_drawn": money(drawn), "grade": w["grade"],
+            # Intermediate steps of rule 5, so the UI can show the working without re-doing float maths
+            "half_net": money(net / 2), "before_rounding": money(net / 2 - drawn),
             "draws": [{"date": x["date"].isoformat(), "amount": money(x["amount"]), "paid_to": x["paid_to"],
                        "upi_ref": x["upi_ref"]} for x in counted],
             "eligible": eligible, "warnings": warnings, "request": None,

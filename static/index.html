@@ -3,64 +3,115 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Velli Draw Check</title>
+  <meta name="description" content="Velli operations tool: how much can a worker draw today?">
+  <title>Draw check · Velli</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d5c4a'/%3E%3Cpath d='M9 9l7 15 7-15' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <!-- Fonts load from Google; without internet the page falls back to the system font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main>
-  <header>
-    <h1>Velli Draw Check</h1>
-    <p class="sub">How much can this worker draw today?</p>
-  </header>
+<a class="skip" href="#main">Skip to content</a>
 
-  <!-- Import flags that need ops review (/api/flags); hidden when there are none -->
-  <section id="flags" class="card flags" hidden>
-    <h2 id="flagsTitle">Flags for ops</h2>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">V</span>Velli <span class="brand-sep">/</span> <span class="brand-page">Draw check</span></div>
+    <div class="topbar-meta" id="dataMeta">Loading register…</div>
+  </div>
+</header>
+
+<!-- Import flags that need ops review (/api/flags); hidden when there are none -->
+<div class="flagbar" id="flags" hidden>
+  <details class="flagbar-inner">
+    <summary><span class="flag-count" id="flagCount">0</span> <span id="flagsTitle">draws need review</span><span class="flag-hint">found while importing the CSVs</span></summary>
     <ul id="flagList"></ul>
-  </section>
+  </details>
+</div>
 
+<main id="main" class="layout">
   <!-- Inputs: worker (sends emp_code, so duplicate names are unambiguous), date, optional amount -->
-  <form id="form" class="card">
-    <label>Worker
-      <select id="worker" required></select>
-    </label>
-    <label>Date
-      <input type="date" id="date" required>
-    </label>
-    <label>Requested amount (₹, optional)
-      <input type="number" id="amount" min="0" step="any" placeholder="e.g. 2000">
-    </label>
-    <div class="actions">
-      <button type="submit">Check eligibility</button>
-      <button type="button" id="showAll" class="secondary">Show all workers on this date</button>
+  <aside class="inputs">
+    <form id="form" class="panel" novalidate>
+      <h1>Check a worker</h1>
+      <div class="field">
+        <label for="worker">Worker</label>
+        <select id="worker" required></select>
+      </div>
+      <div class="field">
+        <label for="date">As of date</label>
+        <input type="date" id="date" required>
+      </div>
+      <div class="field">
+        <label for="amount">Requested amount <span class="opt">optional</span></label>
+        <div class="money-input">
+          <span aria-hidden="true">₹</span>
+          <input type="number" id="amount" min="0" step="any" inputmode="decimal" placeholder="2000" aria-describedby="amountHint">
+        </div>
+        <p class="hint" id="amountHint">Leave blank to see the limit only.</p>
+      </div>
+      <button type="submit" id="submitBtn" class="btn btn-primary">Check eligibility</button>
+    </form>
+
+    <section class="rules" aria-labelledby="rulesTitle">
+      <h2 id="rulesTitle">Rules in use</h2>
+      <dl>
+        <div><dt>Cycle</dt><dd>10th to 9th, payday on the 10th</dd></div>
+        <div><dt>Paid days</dt><dd>P and WO; A and blank unpaid</dd></div>
+        <div><dt>PF + ESI</dt><dd>₹2,000 per cycle, prorated by day</dd></div>
+        <div><dt>Limit</dt><dd>50% of net earned, minus draws</dd></div>
+        <div><dt>Cap</dt><dd>₹5,000 per draw, rounded down to ₹100</dd></div>
+        <div><dt>Fee</dt><dd>2%, recovered on payday</dd></div>
+      </dl>
+    </section>
+  </aside>
+
+  <section class="output" aria-live="polite">
+    <p id="error" class="error" role="alert" hidden></p>
+
+    <!-- Shown until the first check -->
+    <div id="empty" class="empty">
+      <p class="empty-title">No worker checked yet</p>
+      <p>Choose a worker and a date, then check eligibility. The full calculation appears here line by line, so every number can be traced back to the register.</p>
     </div>
-  </form>
 
-  <p id="error" class="error" role="alert" hidden></p>
+    <!-- Filled by renderResult() in app.js -->
+    <article id="result" class="panel result" hidden></article>
 
-  <!-- Filled by renderResult() in app.js -->
-  <section id="result" class="card" hidden aria-live="polite"></section>
-
-  <!-- Bonus (a): English + Tamil message -->
-  <section id="whatsapp" class="card" hidden>
-    <h2>WhatsApp message</h2>
-    <textarea id="waText" rows="6" readonly></textarea>
-    <button type="button" id="copy" class="secondary">Copy</button>
-    <span id="copied" class="muted" hidden>Copied</span>
+    <!-- Bonus (a): English + Tamil message -->
+    <section id="whatsapp" class="panel message" hidden>
+      <div class="section-head">
+        <h2>Message to worker</h2>
+        <button type="button" id="copy" class="btn btn-quiet">Copy message</button>
+      </div>
+      <div class="message-grid">
+        <div><p class="message-lang">English</p><p class="message-text" id="waEn"></p></div>
+        <div lang="ta"><p class="message-lang">தமிழ்</p><p class="message-text" id="waTa"></p></div>
+      </div>
+    </section>
   </section>
+</main>
 
-  <!-- Bonus (b): all workers on the chosen date -->
-  <section id="summary" class="card" hidden>
-    <h2 id="summaryTitle">All workers</h2>
-    <div class="table-wrap"><table id="summaryTable"></table></div>
-  </section>
+<!-- Bonus (b): all workers on the chosen date -->
+<section class="wide" aria-labelledby="summaryTitle">
+  <div class="section-head">
+    <h2 id="summaryTitle">Workforce</h2>
+    <button type="button" id="showAll" class="btn btn-quiet">Show all workers</button>
+  </div>
+  <div id="summary" class="panel table-wrap" hidden>
+    <table id="summaryTable" class="grid"></table>
+  </div>
+</section>
 
-  <!-- Data problems found while loading the CSVs (/api/notes) -->
-  <details class="card">
-    <summary>Data notes: what we cleaned automatically in the CSVs</summary>
+<!-- Data problems cleaned automatically while loading the CSVs (/api/notes) -->
+<section class="wide notes">
+  <details>
+    <summary>Data cleaning log <span class="muted" id="notesCount"></span></summary>
     <ul id="notes"></ul>
   </details>
-</main>
+</section>
+
 <script src="app.js"></script>
 </body>
 </html>
